@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AK4TEK Taiba</title>
+    <!-- استدعاء مكتبة Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            background-color: #2D6242;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* تنسيق الترويسة والشعار */
+        .site-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+        }
+        .site-logo {
+            height: 65px;
+            width: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            object-fit: contain;
+        }
+        .site-header h1 {
+            margin: 0;
+            color: #FFFFFF;
+            font-size: 28px;
+            letter-spacing: 0.5px;
+        }
+
+        /* تصميم زر الإضافة الرئيسي */
+        .header-actions {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .btn-add {
+            background-color: #85BDA6;
+            color: #143521;
+            font-weight: bold;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-add:hover {
+            background-color: #6ea88f;
+            transform: translateY(-1px);
+        }
+
+        /* تصميم شبكة المربعات */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* تصميم المربع الواحد */
+        .card {
+            background: #C0D8E0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            text-align: center;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            background: #d4e5eb;
+        }
+        .card h3 {
+            margin: 0;
+            color: #1E462F;
+            font-size: 18px;
+        }
+
+        /* تصميم النوافذ المنبثقة (Modals) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 85%;
+            max-width: 600px;
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 26px;
+            cursor: pointer;
+            color: #888;
+        }
+        .close-btn:hover {
+            color: #000;
+        }
+
+        /* تنسيق حقول الإدخال والنماذج */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: Tahoma, sans-serif;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            height: 140px;
+            resize: vertical;
+        }
+        .btn-save {
+            background-color: #2D6242;
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        .btn-save:hover {
+            background-color: #1e442d;
+        }
+        .btn-edit {
+            background-color: #ffc107;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-edit:hover {
+            background-color: #e0a800;
+        }
+        .edit-mode {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- الترويسة مع الشعار والعنوان -->
+    <header class="site-header">
+        <img src="assets/logo.png" alt="شعار شركة طيبة للمحروقات" class="site-logo">
+        <h1>AK4TEK Taiba</h1>
+    </header>
+
+    <!-- زر إضافة شرح جديد -->
+    <div class="header-actions">
+        <button class="btn-add" onclick="openAddModal()">+ إضافة شرح جديد</button>
+    </div>
+
+    <!-- مكان عرض المربعات -->
+    <div id="cardsGrid" class="grid-container">
+        <p style="text-align: center; grid-column: 1/-1; color: white;">جاري التحميل...</p>
+    </div>
+
+    <!-- نافذة عرض وتعديل الشرح التفصيلي -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('detailModal')">&times;</span>
+            
+            <!-- زر تفعيل وضع التعديل -->
+            <button id="enableEditBtn" class="btn-edit" onclick="startEditing()">تعديل هذا الشرح</button>
+
+            <!-- وضع العرض العادي -->
+            <div id="viewMode">
+                <h2 id="modalTitle" style="color: #2D6242; margin-top: 0;"></h2>
+                <p id="modalBody" style="line-height: 1.7; white-space: pre-wrap; color: #333;"></p>
+            </div>
+
+            <!-- وضع التعديل -->
+            <div id="editMode" class="edit-mode">
+                <div class="form-group">
+                    <label>تعديل العنوان:</label>
+                    <input type="text" id="editTitleInput">
+                </div>
+                <div class="form-group">
+                    <label>تعديل التفاصيل:</label>
+                    <textarea id="editContentInput"></textarea>
+                </div>
+                <button class="btn-save" onclick="saveUpdatedTutorial()">حفظ التعديلات</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- نافذة إضافة شرح جديد -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addModal')">&times;</span>
+            <h2 style="color: #2D6242; margin-top: 0;">إضافة شرح جديد</h2>
+            <div class="form-group">
+                <label for="newTitle">عنوان الشرح (الاسم الذي يظهر ضمن المربع):</label>
+                <input type="text" id="newTitle" placeholder="مثلاً: طريقة إضافة ومعايرة خزان جديد...">
+            </div>
+            <div class="form-group">
+                <label for="newContent">تفاصيل الشرح:</label>
+                <textarea id="newContent" placeholder="اكتب الشرح هنا بالتفصيل..."></textarea>
+            </div>
+            <button class="btn-save" onclick="saveNewTutorial()">حفظ الشرح</button>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات اتصال Supabase
+        const SUPABASE_URL = 'https://nitlxllguhmtoqdsxkjk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pdGx4bGxndWhtdG9xZHN4a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NzQ0ODgsImV4cCI6MjEwNjQ1MDQ4OH0.86WAFHofWRzcsOXX0gUTho9DyLXlPNw0j9pBOcaRySw';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentTutorialId = null;
+
+        // دالة لجلب البيانات وعرضها
+        async function fetchTutorials() {
+            const { data, error } = await _supabase.from('tutorials').select('*').order('id', { ascending: false });
+            const grid = document.getElementById('cardsGrid');
+            
+            if (error) {
+                grid.innerHTML = '<p style="color:#ffcccc; text-align:center;">حدث خطأ أثناء جلب البيانات</p>';
+                console.error(error);
+                return;
+            }
+
+            grid.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color: white;">لا توجد شروحات مضافة حالياً.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h3>${item.title}</h3>`;
+                card.onclick = () => openDetailModal(item.id, item.title, item.content);
+                grid.appendChild(card);
+            });
+        }
+
+        // دالة حفظ البيانات الجديدة
+        async function saveNewTutorial() {
+            const title = document.getElementById('newTitle').value.trim();
+            const content = document.getElementById('newContent').value.trim();
+
+            if (!title || !content) {
+                alert('الرجاء إدخال العنوان والشرح معاً!');
+                return;
+            }
+
+            const { error } = await _supabase
+                .from('tutorials')
+                .insert([{ title: title, content: content }]);
+
+            if (error) {
+                alert('حدث خطأ أثناء الحفظ!');
+                console.error(error);
+            } else {
+                alert('تم الحفظ بنجاح!');
+                document.getElementById('newTitle').value = '';
+                document.getElementById('newContent').value = '';
+                closeModal('addModal');
+                fetchTutorials();
+            }
+        }
+
+        // فتح نافذة التفاصيل
+        function openDetailModal(id, title, content) {
+            currentTutorialId = id;
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = content;
+            
+            document.getElementById('viewMode').style.display = 'block';
+            document.getElementById('editMode').style.display = 'none';
+            document.getElementById('enableEditBtn').style.display = 'block';
+
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        // تفعيل وضع التعديل
+        function startEditing() {
+            document.getElementById('editTitleInput').value = document.getElementById('modalTitle').innerText;
+            document.getElementById('editContentInput').value = document.getElementById('modalBody').innerText;
+
+            document.getElementById('viewMode').style.display = 'none';
+            document.getElementById('enableEditBtn').style.display = 'none';
+            document.getElementById('editMode').style.display = 'block';
+        }
+
+        // حفظ التعديلات
+        async function saveUpdatedTutorial() {
+            const newTitle = document.getElementById('editTitleInput').value.trim();
+            const newContent = document.getElementById('editContentInput').value.trim();
+
+            if (!newTitle || !newContent) {
+                alert('لا يمكن ترك الحقول فارغة!');
+                return;
+            }
+
+            const { error } = await _supabase
+                .from('tutorials')
+                .update({ title: newTitle, content: newContent })
+                .eq('id', currentTutorialId);
+
+            if (error) {
+                alert('حدث خطأ أثناء تحديث البيانات!');
+                console.error(error);
+            } else {
+                alert('تم تحديث الشرح بنجاح!');
+                closeModal('detailModal');
+                fetchTutorials();
+            }
+        }
+
+        // إغلاق وفتح النوافذ
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // إغلاق النوافذ عند النقر على الخلفية المعتمة
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // تحميل الشروحات فور فتح الصفحة
+        fetchTutorials();
+    </script>
+
+</body>
+</html>
